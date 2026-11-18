@@ -31,6 +31,10 @@
 | TRAP-26 | 旧版本复核 | 覆盖新结论 | 事务条件更新 | `app/store.py` | `tests/test_archive.py::test_stale_review` |
 | TRAP-23 | 生效日端点 | 双计生效日 | 半开区间 | `app/modules/m4_segments/rules.py` | `tests/test_segments.py::test_halfopen_conservation` |
 | TRAP-24 | 分币尾差 | 段合计不等 | 最大余额法 | `app/modules/m5_calculate/rules.py` | `tests/test_calculate.py::test_largest_remainder_conserves` |
+| TRAP-27 | 账户销户 | 静默改退最新账户致冒领 | 原付款人依据，销户阻断挂起 | `app/modules/m5_calculate/refunds.py` | `tests/test_refunds.py::test_closed_original_account_blocks_instead_of_rerouting` |
+| TRAP-28 | 重试重复出指令 | 每次重试新增指令 | (批次,保单)幂等键，重试只累加次数 | `app/store.py` | `tests/test_refunds.py::test_retry_is_idempotent_and_keeps_single_instruction` |
+| TRAP-29 | 失败误删缴费流水 | 追溯链中断 | 失败仅留痕，不触碰原始 rows | `app/store.py` | `tests/test_refunds.py::test_failed_generation_preserves_original_payment_rows` |
+| TRAP-30 | 指令号退化成 preview | 工作台与归档对不上 | 批次ID在模块执行前注入 | `app/workflow.py` | `tests/test_refunds.py::test_instruction_id_stable_across_runs` |
 
 ## 对账规则
 

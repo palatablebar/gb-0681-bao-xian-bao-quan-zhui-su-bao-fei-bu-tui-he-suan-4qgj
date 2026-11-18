@@ -30,6 +30,14 @@ def create_app():
         data=request.get_json(silent=True) or {}
         if not isinstance(data.get('version'),int):raise DomainError('VERSION','请提交复核版本')
         return jsonify(store.review(run_id,data['version'],data.get('decision')))
+    @app.post('/api/runs/<run_id>/refund/<policy_id>/retry')
+    def refund_retry(run_id,policy_id):
+        # 重试只针对已生成的同一条退款指令：不重新核算、不新增指令、不改收款依据
+        state=store.get(run_id)
+        match=[i for i in state.get('refund_instructions',[]) if i['policy_id']==policy_id]
+        if not match:raise DomainError('NOT_FOUND','该保单无退款指令',404)
+        data=request.get_json(silent=True) or {}
+        return jsonify(store.register_refund(run_id,match[0],bool(data.get('simulate_failure'))))
     @app.get('/api/archive/<run_id>/export.csv')
     def download(run_id):
         state=store.get(run_id)

@@ -12,7 +12,12 @@ def test_export_quarantine(state):
 def test_checksum_stable(state):
     assert checksum(state)==state['archive']['sha256'] and len(checksum(state))==64
 def test_archive_ready(state):
-    assert state['archive']['ready'] is True
+    # dirty 批含原付款账户销户的阻断退款件，需人工核验，结案置为不可就绪
+    assert state['archive']['ready'] is False and state['archive']['refund_blocked']==1
+    clean=run(load('clean.csv').replace(b'ACC-P013,closed',b'ACC-P013,open'),{})
+    # 阻断解除后（原付款账户恢复可用）结案可就绪，且仍只退原付款人
+    assert clean['archive']['ready'] is True
+    assert all(i['payee_basis']=='ORIGINAL_PAYER' for i in clean['refund_instructions'])
 def test_idempotent_store(state,tmp_path,monkeypatch):
     monkeypatch.setenv('DB_PATH',str(tmp_path/'r.db'))
     a=store.save(state['run_id'],state);b=store.save(state['run_id'],state)

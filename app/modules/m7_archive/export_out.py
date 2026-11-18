@@ -7,8 +7,11 @@ def bundle(state):
     writer.writerow(['运行清单',rid,'','','',json.dumps(state.get('manifest',{}),ensure_ascii=False,sort_keys=True)])
     writer.writerow(['对账',rid,'','','',json.dumps(state.get('reconcile',{}),ensure_ascii=False,sort_keys=True)])
     for row in state.get('calculations',[]):writer.writerow(['计算',rid,row.get('line',''),row.get('id',''),row.get('code',''),json.dumps(row,ensure_ascii=False,sort_keys=True)])
+    # 退款指令与工作台共用 state['refund_instructions'] / state['refund_basis']，同源不重算
+    for row in state.get('refund_instructions',[]):
+        writer.writerow(['退款指令',rid,row.get('source_line',''),row.get('policy_id',''),row.get('status',''),json.dumps(row,ensure_ascii=False,sort_keys=True)])
     for row in state['quarantine']:writer.writerow(['隔离',rid,row['line'],row.get('id',''),row['code'],json.dumps(row.get('raw',{}),ensure_ascii=False,sort_keys=True)])
-    return '\ufeff'+out.getvalue()
+    return '﻿'+out.getvalue()
 
 def checksum(state):
     return hashlib.sha256(bundle(state).encode('utf-8')).hexdigest()

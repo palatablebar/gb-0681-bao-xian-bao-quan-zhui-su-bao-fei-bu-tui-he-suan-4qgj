@@ -30,3 +30,26 @@ def test_reselect_existing_run_updates_visible_batch(client):
 
 def test_invalid_csv_type_rejected(client):
     assert client.post('/api/runs',json={'csv':123}).status_code==422
+
+def test_refund_retry_endpoint_idempotent(client):
+    s=client.post('/api/runs',json={'sample':'clean.csv'}).get_json()
+    url='/api/runs/%s/refund/P014/retry'%s['run_id']
+    a=client.post(url).get_json();b=client.post(url).get_json()
+    assert a['instruction_no']==b['instruction_no'] and b['attempts']==2
+
+def test_refund_retry_failure_keeps_payment_trace(client):
+    s=client.post('/api/runs',json={'sample':'clean.csv'}).get_json()
+    r=client.post('/api/runs/%s/refund/P014/retry'%s['run_id'],json={'simulate_failure':True})
+    assert r.status_code==502 and r.get_json()['code']=='REFUND_FAILED'
+    state=client.get('/api/runs/'+s['run_id']).get_json()
+    assert any(x['policy_id']=='P014' and x['kind']=='issue' and str(x['paid'])=='7300' for x in state['rows'])
+
+def test_refund_retry_unknown_policy_404(client):
+    s=client.post('/api/runs',json={'sample':'clean.csv'}).get_json()
+    r=client.post('/api/runs/%s/refund/NOPE/retry'%s['run_id'])
+    assert r.status_code==404
+
+def test_export_contains_refund_instructions(client):
+    s=client.post('/api/runs',json={'sample':'clean.csv'}).get_json()
+    text=client.get('/api/archive/'+s['run_id']+'/export.csv').data.decode('utf-8-sig')
+    assert '退款指令' in text and 'ORIGINAL_PAYER' in text
